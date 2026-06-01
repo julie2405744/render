@@ -122,7 +122,17 @@ exports.updatePhone = async (req, res) => {
 // @Responsibility: Manage Multer PDF uploads and validate file streams
 exports.uploadReport = async (req, res) => {
     try {
-        if (!req.file) return res.redirect('/client/profile?error=No+file+was+uploaded.');
+        console.log('📤 Upload attempt:', {
+            hasFile: !!req.file,
+            fileName: req.file?.originalname,
+            fileSize: req.file?.size,
+            userId: req.session?.user?.id
+        });
+
+        if (!req.file) {
+            console.error('❌ No file received');
+            return res.redirect('/client/profile?error=No+file+was+uploaded.');
+        }
 
         // ── Backend Validation ──
         const allowedMime = ['application/pdf', 'image/png', 'image/jpeg', 'text/plain',
@@ -131,23 +141,31 @@ exports.uploadReport = async (req, res) => {
         const allowedExt  = ['.pdf', '.png', '.jpg', '.jpeg', '.txt', '.doc', '.docx'];
         const ext         = require('path').extname(req.file.originalname).toLowerCase();
 
-        if (!allowedMime.includes(req.file.mimetype) && !allowedExt.includes(ext))
+        if (!allowedMime.includes(req.file.mimetype) && !allowedExt.includes(ext)) {
+            console.error('❌ Invalid file type:', req.file.mimetype, ext);
             return res.redirect('/client/profile?error=Invalid+file+type.+Only+PDF,+PNG,+JPG,+TXT,+and+DOC+files+are+allowed.');
+        }
 
         const maxSize = 5 * 1024 * 1024; // 5 MB
-        if (req.file.size > maxSize)
+        if (req.file.size > maxSize) {
+            console.error('❌ File too large:', req.file.size);
             return res.redirect('/client/profile?error=File+size+must+not+exceed+5+MB.');
+        }
 
         const userId       = req.session.user.id;
         const originalName = req.file.originalname;
         const cloudinaryUrl = req.file.path; // Cloudinary URL from multer-storage-cloudinary
 
+        console.log('📁 Uploading to Cloudinary:', cloudinaryUrl);
+
         await User.findByIdAndUpdate(userId, {
             $push: { medicalHistory: `${originalName}|${cloudinaryUrl}` }
         });
 
+        console.log('✅ Upload successful');
         res.redirect('/client/profile?success=uploaded');
     } catch (err) {
+        console.error('❌ Upload error:', err.message, err.stack);
         res.redirect('/client/profile?error=' + encodeURIComponent(err.message));
     }
 };
