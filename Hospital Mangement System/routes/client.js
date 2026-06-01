@@ -12,6 +12,14 @@ const cloudinary = require('cloudinary').v2;
 // @Responsibility: Multer middleware configuration for Cloudinary uploads
 // ---------------------------------------------------------
 
+const cloudEnvState = {
+    CLOUDINARY_URL: !!process.env.CLOUDINARY_URL,
+    CLOUDINARY_CLOUD_NAME: !!process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY: !!process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET: !!process.env.CLOUDINARY_API_SECRET
+};
+console.log('Cloudinary env available:', cloudEnvState);
+
 if (process.env.CLOUDINARY_URL) {
     cloudinary.config({ cloudinary_url: process.env.CLOUDINARY_URL });
     console.log('✅ Cloudinary configured via CLOUDINARY_URL');
