@@ -7,6 +7,8 @@ const Doctor  = require('../models/Doctor');
 const Booking = require('../models/Booking');
 const User    = require('../models/User');
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
+const path = require('path');
 
 // ── Helper ────────────────────────────────────────────
 // @Author: Member 3 (Algorithm & Error Handling Engineer)
@@ -156,6 +158,32 @@ exports.uploadReport = async (req, res) => {
         const userId       = req.session.user.id;
         const originalName = req.file.originalname;
 
+        const env = (process.env.ENVIRONMENT || process.env.NODE_ENV || 'production').toString().toLowerCase();
+        const isLocal = env === 'development' || env === 'local';
+
+        if (isLocal) {
+            // When running locally, save the uploaded file to /uploads and store its relative path
+            const uploadsDir = path.join(__dirname, '..', 'uploads');
+            try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true }); } catch (e) { /* ignore */ }
+
+            // If multer used diskStorage, the file is already saved on disk
+            let filename = req.file.filename || req.file.path && path.basename(req.file.path);
+            if (!filename) {
+                // Fallback: write buffer to disk
+                filename = `${Date.now()}_${Math.floor(Math.random() * 1e6)}${path.extname(originalName)}`;
+                const outPath = path.join(uploadsDir, filename);
+                fs.writeFileSync(outPath, req.file.buffer);
+            }
+
+            const publicPath = `/uploads/${filename}`;
+            await User.findByIdAndUpdate(userId, {
+                $push: { medicalHistory: `${originalName}|${publicPath}` }
+            });
+            console.log('✅ Local upload saved:', publicPath);
+            return res.redirect('/client/profile?success=uploaded');
+        }
+
+        // Production/cloud path (existing behavior)
         const uploadResult = await new Promise((resolve, reject) => {
             const stream = cloudinary.uploader.upload_stream({
                 folder: 'hayat-hospital/medical-records',

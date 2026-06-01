@@ -5,6 +5,7 @@ const clientController  = require('../controllers/clientController');
 
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const cloudinary = require('cloudinary').v2;
 
 // ---------------------------------------------------------
@@ -34,8 +35,29 @@ if (process.env.CLOUDINARY_URL) {
     console.error('❌ Cloudinary not configured - missing environment variables');
 }
 
+// Environment: allow switching to local uploads for development
+const env = (process.env.ENVIRONMENT || process.env.NODE_ENV || 'production').toString().toLowerCase();
+const isLocal = env === 'development' || env === 'local';
+
+if (isLocal) {
+    // Ensure uploads directory exists when running locally
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true }); } catch (e) { /* ignore */ }
+    console.log('ℹ️ Running in local mode — saving uploads to', uploadsDir);
+}
+
+const storage = isLocal
+    ? multer.diskStorage({
+        destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'uploads')),
+        filename: (req, file, cb) => {
+            const safeName = `${Date.now()}_${Math.floor(Math.random() * 1e6)}${path.extname(file.originalname)}`;
+            cb(null, safeName);
+        }
+    })
+    : multer.memoryStorage();
+
 const upload = multer({
-    storage: multer.memoryStorage(),
+    storage,
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 

@@ -41,8 +41,14 @@ app.use((req, res, next) => {
 
 // ── Static files ──────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
-// Note: File uploads now stored on Cloudinary (see routes/client.js)
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve local uploads only when running in development/local mode
+const appEnv = (process.env.ENVIRONMENT || process.env.NODE_ENV || 'production').toString().toLowerCase();
+if (appEnv === 'development' || appEnv === 'local') {
+    app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+    console.log('ℹ️ Serving /uploads as static (development mode)');
+} else {
+    // Note: File uploads now stored on Cloudinary (see routes/client.js)
+}
 
 // ── Routes ────────────────────────────────────────────
 app.use('/',       require('./routes/landing'));
