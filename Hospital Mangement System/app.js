@@ -41,7 +41,8 @@ app.use((req, res, next) => {
 
 // ── Static files ──────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Note: File uploads now stored on Cloudinary (see routes/client.js)
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ────────────────────────────────────────────
 app.use('/',       require('./routes/landing'));

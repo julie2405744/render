@@ -139,11 +139,11 @@ exports.uploadReport = async (req, res) => {
             return res.redirect('/client/profile?error=File+size+must+not+exceed+5+MB.');
 
         const userId       = req.session.user.id;
-        const filename     = req.file.filename;
         const originalName = req.file.originalname;
+        const cloudinaryUrl = req.file.path; // Cloudinary URL from multer-storage-cloudinary
 
         await User.findByIdAndUpdate(userId, {
-            $push: { medicalHistory: `${originalName}|${filename}` }
+            $push: { medicalHistory: `${originalName}|${cloudinaryUrl}` }
         });
 
         res.redirect('/client/profile?success=uploaded');

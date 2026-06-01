@@ -116,7 +116,13 @@
                         <div class="report-item">
                             <span><%= orig %></span>
                             <% if (stored) { %>
-                            <a href="/uploads/<%= stored %>" target="_blank" class="btn-small">View Report</a>
+                                <% if (stored.includes('http')) { %>
+                                    <!-- Cloudinary URL -->
+                                    <a href="<%= stored %>" target="_blank" class="btn-small">View Report</a>
+                                <% } else { %>
+                                    <!-- Fallback for local uploads (legacy) -->
+                                    <a href="/uploads/<%= stored %>" target="_blank" class="btn-small">View Report</a>
+                                <% } %>
                             <% } else { %>
                             <span class="btn-small" style="background:none; color:var(--muted); padding:0;">Record</span>
                             <% } %>
