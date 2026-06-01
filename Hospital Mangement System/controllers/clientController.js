@@ -6,6 +6,7 @@
 const Doctor  = require('../models/Doctor');
 const Booking = require('../models/Booking');
 const User    = require('../models/User');
+const cloudinary = require('cloudinary').v2;
 
 // ── Helper ────────────────────────────────────────────
 // @Author: Member 3 (Algorithm & Error Handling Engineer)
@@ -154,19 +155,32 @@ exports.uploadReport = async (req, res) => {
 
         const userId       = req.session.user.id;
         const originalName = req.file.originalname;
-        const cloudinaryUrl = req.file.path; // Cloudinary URL from multer-storage-cloudinary
 
-        console.log('📁 Uploading to Cloudinary:', cloudinaryUrl);
-
-        await User.findByIdAndUpdate(userId, {
-            $push: { medicalHistory: `${originalName}|${cloudinaryUrl}` }
+        const uploadResult = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream({
+                folder: 'hayat-hospital/medical-records',
+                resource_type: 'auto',
+                public_id: `report_${Date.now()}_${Math.floor(Math.random() * 1e6)}`
+            }, (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            });
+            stream.end(req.file.buffer);
         });
 
-        console.log('✅ Upload successful');
+        if (!uploadResult || !uploadResult.secure_url) {
+            throw new Error('Cloudinary upload failed');
+        }
+
+        await User.findByIdAndUpdate(userId, {
+            $push: { medicalHistory: `${originalName}|${uploadResult.secure_url}` }
+        });
+
+        console.log('✅ Upload successful:', uploadResult.secure_url);
         res.redirect('/client/profile?success=uploaded');
     } catch (err) {
-        console.error('❌ Upload error:', err.message, err.stack);
-        res.redirect('/client/profile?error=' + encodeURIComponent(err.message));
+        console.error('❌ Upload error:', err && err.message ? err.message : err, err && err.stack ? err.stack : 'no stack');
+        res.redirect('/client/profile?error=' + encodeURIComponent(err && err.message ? err.message : 'Upload failed'));
     }
 };
 
