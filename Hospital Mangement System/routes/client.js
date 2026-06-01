@@ -13,12 +13,16 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 // @Responsibility: Multer middleware configuration for Cloudinary uploads
 // ---------------------------------------------------------
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// Configure Cloudinary - supports both CLOUDINARY_URL and individual variables
+if (process.env.CLOUDINARY_URL) {
+    cloudinary.config({ secure: true });
+} else {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+}
 
 // Configure Cloudinary Storage
 const storage = new CloudinaryStorage({
